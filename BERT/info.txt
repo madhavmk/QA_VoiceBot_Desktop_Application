@@ -1,0 +1,1 @@
+Place the extracted BERT model data in this folder
