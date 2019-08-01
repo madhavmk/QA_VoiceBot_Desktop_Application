@@ -1,0 +1,1 @@
+Insert the extracted Deepspeech 0.5 model into this folder
