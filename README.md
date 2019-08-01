@@ -8,19 +8,21 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
 
 ## Requirements and Setup
 
- - Pytorch
- - Tensorflow (1.12 but 1.14 is also supported)
- - Wikipedia-API
- - Deepspeech
- - Spacy
- - GingerIt
- - pytorch-pretrained-bert
- - synthesizer
- - playsound
- - sounddevice
- - soundfile
- - pygame
-
+ - pytorch (1.1.0)
+ - tensorflow (1.12)
+ - wikipedia (1.14)
+ - deepspeech (0.5.0)
+ - spacy (2.1.5)
+ - gingerit (0.8.0)
+ - pytorch-pretrained-bert (0.6.2)
+ - playsound (1.2.2)
+ - sounddevice (0.3.13)
+ - soundfile (0.10.2)
+ - inflect (2.1)
+ - librosa (0.7.0)
+ - matplotlib (3.1.1)
+ 
+We recommend using a virtual environment to run this to prevent any conflicts with things like numpy
 You will also require the following models 
 
  - [BERT model fine tuned for SQuAD](https://drive.google.com/file/d/1hktnjAJOdOwPxTK3R-KST9-kUQFYPusM/view?usp=sharing)
@@ -28,7 +30,8 @@ You will also require the following models
  - [Tacotron model](http://data.keithito.com/data/speech/tacotron-20180906.tar.gz)
  - [WaveRNN model](https://drive.google.com/open?id=1mv0-1uTZpAGrH9GIjvFgjw-YeYg7mjiN)
 
- Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and tacotron-models folders respectively. WaveRNN should be extracted under Vocoder_WaveRNN in a separate WaveRNN_weights folder)
+ An info.txt file is located in every directory where a specific model is required.
+ Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and Tacotron_TTS/tacotron-models-data folders respectively. WaveRNN should be extracted under Vocoder_WaveRNN in a separate WaveRNN_weights folder)
 
 Open domain QA will also require an internet connection, to get information from Wikipedia. 
  
