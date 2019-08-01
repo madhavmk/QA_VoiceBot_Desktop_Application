@@ -26,8 +26,9 @@ You will also require the following models
  - [BERT model fine tuned for SQuAD](https://drive.google.com/file/d/1hktnjAJOdOwPxTK3R-KST9-kUQFYPusM/view?usp=sharing)
  - [Deepspeech 0.5.0 model](https://github.com/mozilla/DeepSpeech/releases/download/v0.5.0/deepspeech-0.5.0-models.tar.gz)
  - [Tacotron model](http://data.keithito.com/data/speech/tacotron-20180906.tar.gz)
+ - [WaveRNN model](https://drive.google.com/open?id=1mv0-1uTZpAGrH9GIjvFgjw-YeYg7mjiN)
 
- Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and tacotron-models folders respectively)
+ Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and tacotron-models folders respectively. WaveRNN should be extracted under Vocoder_WaveRNN in a separate WaveRNN_weights folder)
 
 Open domain QA will also require an internet connection, to get information from Wikipedia. 
  
