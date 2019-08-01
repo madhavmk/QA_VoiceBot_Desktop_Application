@@ -22,7 +22,8 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
  - librosa (0.7.0)
  - matplotlib (3.1.1)
  
-We recommend using a virtual environment to run this to prevent any conflicts with things like numpy
+We recommend using a virtual environment to run this to prevent any conflicts with things like numpy.
+
 You will also require the following models 
 
  - [BERT model fine tuned for SQuAD](https://drive.google.com/file/d/1hktnjAJOdOwPxTK3R-KST9-kUQFYPusM/view?usp=sharing)
@@ -31,7 +32,7 @@ You will also require the following models
  - [WaveRNN model](https://drive.google.com/open?id=1mv0-1uTZpAGrH9GIjvFgjw-YeYg7mjiN)
 
  An info.txt file is located in every directory where a specific model is required.
- Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and Tacotron_TTS/tacotron-models-data folders respectively. WaveRNN should be extracted under Vocoder_WaveRNN in a separate WaveRNN_weights folder)
+ Extract the contents of the models and place them in their respective folders in the project. (BERT, DeepSpeech/Models and Tacotron_TTS/tacotron-models-data folders respectively. WaveRNN should be extracted under the Vocoder_WaveRNN folder)
 
 Open domain QA will also require an internet connection, to get information from Wikipedia. 
  
