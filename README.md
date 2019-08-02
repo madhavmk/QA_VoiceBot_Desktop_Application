@@ -21,8 +21,12 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
  - inflect (2.1)
  - librosa (0.7.0)
  - matplotlib (3.1.1)
+ - unidecode (1.1.1)
  
 We recommend using a virtual environment to run this to prevent any conflicts with things like numpy.
+
+You can install any of the Spacy NER models you prefer (We have used 'en_core_web_md') by: (We have to run it with Administaion permissions)
+ - python -m spacy download en_core_web_md
 
 You will also require the following models 
 
