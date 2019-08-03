@@ -22,6 +22,7 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
  - librosa (0.7.0)
  - matplotlib (3.1.1)
  - unidecode (1.1.1)
+ - numpy (1.17.0)
  
 We recommend using a virtual environment to run this to prevent any conflicts with things like numpy.
 
