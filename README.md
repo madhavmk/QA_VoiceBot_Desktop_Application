@@ -49,6 +49,18 @@ Run the Voicebot file to start the application. You will be prompted to select t
 Once the TTS has been loaded you will be prompted to select the running mode. This will let you choose between a microphone for input audio, or allow you to use a folder of audio files to test. 
 To add your own audio to the testing set, simply place the wav file in the test-audio folder. For best results, use an American male voice, with a normal or slow speed setting from a site like [this](http://www.fromtexttospeech.com/). 
 
+## Running on Windows 10
+Run VoiceBot-windows.py
+Initially designed for the Windows platform. As such, all features should work perfectly.
+Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
+
+## Running on Ubuntu
+Rin the VoiceBot-linux.py file
+playsound library and sounddevice library is not compatible.
+So, audio cannot be recorded or played on or from the console.
+VoiceBot can work only from questions pre-recorded in 'test_audio' folder.
+Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
+
 ## References
 
  - [Mozilla Deepspeech](https://github.com/mozilla/DeepSpeech)
