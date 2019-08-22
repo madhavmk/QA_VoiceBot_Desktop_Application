@@ -8,6 +8,7 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
 
 ## Requirements and Setup
 
+ - python 3.6
  - pytorch (1.1.0)
  - tensorflow (1.12)
  - wikipedia (1.14)
