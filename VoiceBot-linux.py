@@ -58,6 +58,9 @@ trie = 'DeepSpeech/Models/trie'
 N_FEATURES = 261
 N_CONTEXT = 9
 
+current_working_directory=os.getcwd()
+#print(current_working_directory)
+
 model_load_start = timer()
 ds = Model(speech_model_path, N_FEATURES, N_CONTEXT, alphabet, BEAM_WIDTH)
 model_load_end = timer() - model_load_start
@@ -95,8 +98,8 @@ if tts_choice == 0:
     model_load_start = timer()
     synthesizer = Synthesizer()
 
-    synthesizer.load('/QA_VoiceBot_Desktop_Application-Clean/Tacotron_TTS/tacotron_model_data/model.ckpt')  
-	#synthesizer.load('Tacotron_TTS\\tacotron_model_data\\model.ckpt')
+    synthesizer.load( current_working_directory + '/Tacotron_TTS/tacotron_model_data/model.ckpt')  
+    #synthesizer.load('/QA_VoiceBot_Desktop_Application-Clean/Tacotron_TTS/tacotron_model_data/model.ckpt')  
     model_load_end = timer() - model_load_start
     print('Loaded T2S model in {:.3}s.'.format(model_load_end))
 else:
@@ -362,7 +365,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
             orig_end_position = orig_ns_to_s_map[ns_end_position]
 
     if orig_end_position is None:
-        return orig_text
+        return orig_textclear
 
     output_text = orig_text[orig_start_position:(orig_end_position + 1)]
     return output_text
@@ -729,3 +732,4 @@ print("Testing all files in testing folder")
 print("########################")
 print()
 test_files()
+
