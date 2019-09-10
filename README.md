@@ -69,3 +69,6 @@ Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TT
  - [Hugging Face's BERT for QA implementation](https://github.com/huggingface/pytorch-transformers)
  - [Fatchord's WaveRNN](https://github.com/fatchord/WaveRNN)
  - [BERT model trained by Surbhi Bhardwaj](https://github.com/surbhardwaj/BERT-QnA-Squad_2.0_Finetuned_Model)
+
+## Demo video
+Link to demo video here: https://drive.google.com/file/d/16pFeDjqDOCkVXW0cc09l_mkuxqgQjo8s/view?usp=drive_web
