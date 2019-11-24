@@ -2,6 +2,28 @@
 
 This is an end-to-end voicebot that aims to answer open domain questions, and is intended to be used as a benchmarking tool
 
+## RASA Update
+Rasa update has been added in this branch. The additional dependencies are:
+ - rasa (1.4.1)
+ - rasa-sdk (1.4.0)
+Ensure that these are added to your venv
+
+The trained rasa model has already been added. The model responds to regular greetings, and when asked a question it redirects to the action server where the QA is performed. There are no additional intents.
+
+It has been set up as a client - server model. Details are as follows 
+ - The main application is rasa_voice_client. It reads from the test_audio folder and runs the deepspeech model to generate the question
+ - The rasa server on port 5002 handles conversation with the client
+ - The rasa action server on port 5055 handles the custom action (Question answering engine is located here)
+ - The T2S engine on port 1003 takes the answer as text input from the client and runs the Tacotron T2S on the text, and stores the audio files in the Audio_Output folder
+ 
+The parts are run with the following commands
+ - Rasa server : rasa run -m models --endpoints endpoints.yml --port 5002 --credentials credentials.yml
+ - Action server : rasa run actions
+ - T2S : python rasa_t2s.py
+ - Client : python rasa_voice_client.py
+ 
+ Ensure that the client is started only after the other 3 servers have started
+
 ## Design
 **![](https://lh5.googleusercontent.com/2oFMv1ybATD_cmMO0CwzB-RAk6Nz-VG1wwDioIGWahLR4bVG51TIHbhHIUGTSpaLcVQS41QZIPOfX00VbZGCPa5O98st_VRsNlJnC3qEehpnEJrYLyLUOdCy-wiD34IC26wCac4KnxY)**
 
