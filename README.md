@@ -8,6 +8,9 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
 
 ## Requirements and Setup
 
+(Easiest way of installation is reacreating the conda environment on Windows. Use the command:
+"conda env create -f Windows_Anaconda_Environment.yml")
+
  - python 3.6
  - pytorch (1.1.0)
  - tensorflow (1.12)
