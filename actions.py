@@ -459,7 +459,8 @@ def reduced_text(wiki_page, doc, topics):
                     if root in s:
                         reduced_passage += s + "."
 
-    return wiki_page.summary + reduced_passage
+    #return wiki_page.summary + reduced_passage
+    return wiki_page.content
 
 
 def get_context(question):

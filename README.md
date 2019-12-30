@@ -6,6 +6,11 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
 Rasa update has been added in this branch. The additional dependencies are:
  - rasa (1.4.1)
  - rasa-sdk (1.4.0)
+
+Extra dependencies on Linux Systems (Tested on Ubuntu 18.04.3 LTS)
+ - conda install -c conda-forge pygobject
+ - pip install sanic==19.9.0
+
 Ensure that these are added to your venv
 
 The trained rasa model has already been added. The model responds to regular greetings, and when asked a question it redirects to the action server where the QA is performed. There are no additional intents.
@@ -14,7 +19,7 @@ It has been set up as a client - server model. Details are as follows
  - The main application is rasa_voice_client. It reads from the test_audio folder and runs the deepspeech model to generate the question
  - The rasa server on port 5002 handles conversation with the client
  - The rasa action server on port 5055 handles the custom action (Question answering engine is located here)
- - The T2S engine on port 1003 takes the answer as text input from the client and runs the Tacotron T2S on the text, and stores the audio files in the Audio_Output folder
+ - The T2S engine on port 5004 takes the answer as text input from the client and runs the Tacotron T2S on the text, and stores the audio files in the Audio_Output folder
  
 The parts are run with the following commands
  - Rasa server : rasa run -m models --endpoints endpoints.yml --port 5002 --credentials credentials.yml
@@ -46,6 +51,7 @@ The parts are run with the following commands
  - matplotlib (3.1.1)
  - unidecode (1.1.1)
  - numpy (1.17.0)
+
  
 We recommend using a virtual environment to run this to prevent any conflicts with things like numpy.
 
@@ -75,14 +81,14 @@ To add your own audio to the testing set, simply place the wav file in the test-
 ## Running on Windows 10
 Run VoiceBot-windows.py
 Initially designed for the Windows platform. As such, all features should work perfectly.
-Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
+Outputs can be accessed from the '/Audio_outputs' subfolder.
 
 ## Running on Ubuntu
 Rin the VoiceBot-linux.py file
 playsound library and sounddevice library is not compatible.
 So, audio cannot be recorded or played on or from the console.
 VoiceBot can work only from questions pre-recorded in 'test_audio' folder.
-Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
+Outputs can be accessed from the '/Audio_outputs' subfolder.
 
 ## References
 
@@ -92,5 +98,3 @@ Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TT
  - [Fatchord's WaveRNN](https://github.com/fatchord/WaveRNN)
  - [BERT model trained by Surbhi Bhardwaj](https://github.com/surbhardwaj/BERT-QnA-Squad_2.0_Finetuned_Model)
 
-## Demo video
-Link to demo video here: https://drive.google.com/file/d/16pFeDjqDOCkVXW0cc09l_mkuxqgQjo8s/view?usp=drive_web

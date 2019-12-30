@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 
 model_load_start = timer()
 synthesizer = Synthesizer()
-synthesizer.load('Tacotron_TTS\\tacotron_model_data\\model.ckpt')
+synthesizer.load('Tacotron_TTS/tacotron_model_data/model.ckpt')
 model_load_end = timer() - model_load_start
 print('Loaded T2S model in {:.3}s.'.format(model_load_end))
 
@@ -44,4 +44,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=1003)
+    app.run(host='0.0.0.0', port=5004)

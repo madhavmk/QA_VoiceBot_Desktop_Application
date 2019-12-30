@@ -49,12 +49,12 @@ print('Loaded S2T model in {:.3}s.'.format(model_load_end))
 def test_files():
     count = 0
     time_for_all_files = 0
-    for file in os.listdir(directory):
+    for file in sorted(os.listdir(directory)):
         filename = os.fsdecode(file)
         if filename.endswith(".wav"):
             start_time = timer()
             fn2 = directory_in_str + filename
-            playsound(fn2)
+            #playsound(fn2)
             fin = wave.open(fn2, 'rb')
             fs = fin.getframerate()
             if fs != 16000:
@@ -81,15 +81,20 @@ def test_files():
             r = requests.post('http://localhost:5002/webhooks/rest/webhook',
                               json={"sender": sender, "message": qasked})
             print("Bot says, ")
+            print(r)
+            #Change
+            
             if len(r.json()) == 0:
                 bot_message = "Sorry I couldn't answer that"
             else:
                 bot_message = r.json()[0]['text']
+
             print(bot_message)
             print("Answer generated in {:.3}s.".format(timer() - gen_start))
             print("Sending to T2S server")
             # t2s_time = timer()
-            s2t_req = requests.post('http://localhost:1003/t2s', data=json.dumps({'ans_output': str(bot_message)}))
+            #Changed port for T2S from 1003 to 5004
+            s2t_req = requests.post('http://localhost:5004/t2s', data=json.dumps({'ans_output': str(bot_message)}))
             sample_time = timer() - start_time
             print("Time for sample: {:.3}s.\n".format(sample_time))
             time_for_all_files += sample_time
