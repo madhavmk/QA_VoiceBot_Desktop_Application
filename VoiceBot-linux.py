@@ -1,24 +1,72 @@
-# This files contains your custom actions which can be used to run
-# custom Python code.
-#
-# See this guide on how to implement these action:
-# https://rasa.com/docs/rasa/core/actions/#custom-actions/
+"""
+This code was developed by Anuj Tambwekar, Madhav Kashyap and Rohit Menon of PES University
+Refer to the README for the sources of the Deepspeech, Tacotron and WaveRNN implementations/folders
+The answer extraction code references the Hugging face run_squad.py example, modified for our use
+"""
 
+import sys
+import wave
+import os
+import audioop
+import collections
 
-# This is a simple example for a custom action which utters "Hello World!"
-
-from typing import Any, Text, Dict, List
-from rasa_sdk import Action, Tracker
-from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet
-from pytorch_pretrained_bert.tokenization import BasicTokenizer, BertTokenizer
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig
+from timeit import default_timer as timer
+import numpy as np
 import torch
 import wikipedia
 import spacy
-import collections
-import re
+import sounddevice as sd
+import soundfile as sf
+from gingerit.gingerit import GingerIt
+from playsound import playsound
 
+from pytorch_pretrained_bert.tokenization import BasicTokenizer, BertTokenizer
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig
+
+from deepspeech import Model
+
+from Tacotron_TTS.synthesizer import Synthesizer
+
+from Vocoder_WaveRNN.vocoder_models.fatchord_version import WaveRNN
+from Vocoder_WaveRNN import vocoder_hparams as hp
+from Vocoder_WaveRNN.vocoder_utils.text import symbols
+from Vocoder_WaveRNN.vocoder_models.tacotron import Tacotron
+from Vocoder_WaveRNN.vocoder_utils.text import text_to_sequence
+
+spell_check = GingerIt()
+
+
+def change_samplerate(audio_in, inrate):
+    # s_read = wave.open(audio_path,'r')
+    n_frames = audio_in.getnframes()
+    channels = audio_in.getnchannels()
+    data = audio_in.readframes(n_frames)
+    converted = audioop.ratecv(data, 2, channels, inrate, 16000, None)
+    converted = audioop.tomono(converted[0], 2, 1, 0)
+    op = np.frombuffer(converted, np.int16)
+    return 16000, op
+
+
+BEAM_WIDTH = 500
+LM_ALPHA = 0.75
+LM_BETA = 1.85
+
+speech_model_path = 'DeepSpeech/Models/output_graph.pb'
+alphabet = 'DeepSpeech/Models/alphabet.txt'
+lm = 'DeepSpeech/Models/lm.binary'
+trie = 'DeepSpeech/Models/trie'
+N_FEATURES = 261
+N_CONTEXT = 9
+
+current_working_directory=os.getcwd()
+#print(current_working_directory)
+
+model_load_start = timer()
+ds = Model(speech_model_path, N_FEATURES, N_CONTEXT, alphabet, BEAM_WIDTH)
+model_load_end = timer() - model_load_start
+print('Loaded S2T model in {:.3}s.'.format(model_load_end))
+
+model_load_start = timer()
 model_path = 'BERT/bert_model.bin'
 config_file = 'BERT/bert_config.json'
 max_answer_length = 30
@@ -26,64 +74,74 @@ max_query_length = 64
 doc_stride = 128
 max_seq_length = 384
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#############
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
+#############
 
 config = BertConfig(config_file)
 model = BertForQuestionAnswering(config)
 model.load_state_dict(torch.load(model_path, map_location='cpu'))
 model.to(device)
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-priorities = {"PERSON": 1, "EVENT": 2, "ORG": 3, "PRODUCT": 4, "LOC": 5, "GPE": 6, "NORP": 7, "LANGUAGE": 8,
-              "DATE": 9, "OTHER": 10}
+model_load_end = timer() - model_load_start
+print('Loaded BERT model in {:.3}s.'.format(model_load_end))
+print('')
+print("Input 0 for tacotron and 1 for WaveRNN >>> ",end=' ')
+tts_choice = int(input())
 
-nlp = spacy.load("en_core_web_md")  # Much worse but faster NER with "en_core_web_sm"
+if tts_choice != 1:
+    tts_choice = 0
 
-LOCALINFO = {"you": 'Data/About_Self',
-             "yourself": 'Data/About_Self',
-             "You": 'Data/About_Self',
-             "Yourself": 'Data/About_Self',
-             "PESU": 'Data/About_PESU',
-             "PES University": 'Data/About_PESU'}
+if tts_choice == 0:
+    print("Loading regular tacotron....")
+    model_load_start = timer()
+    synthesizer = Synthesizer()
 
-DATAKEYS = LOCALINFO.keys()
+    synthesizer.load( current_working_directory + '/Tacotron_TTS/tacotron_model_data/model.ckpt')  
+    #synthesizer.load('/QA_VoiceBot_Desktop_Application-Clean/Tacotron_TTS/tacotron_model_data/model.ckpt')  
+    model_load_end = timer() - model_load_start
+    print('Loaded T2S model in {:.3}s.'.format(model_load_end))
+else:
+    print("Loading fatchord wavernn implementation...")
+    model_load_start = timer()
+    print('\nInitialising WaveRNN Model...\n')
 
-class ActionHelloWorld(Action):
-    def name(self) -> Text:
-        return "action_hello_world"
+    # Instantiate WaveRNN Model
+    voc_model = WaveRNN(rnn_dims=hp.voc_rnn_dims,
+                        fc_dims=hp.voc_fc_dims,
+                        bits=hp.bits,
+                        pad=hp.voc_pad,
+                        upsample_factors=hp.voc_upsample_factors,
+                        feat_dims=hp.num_mels,
+                        compute_dims=hp.voc_compute_dims,
+                        res_out_dims=hp.voc_res_out_dims,
+                        res_blocks=hp.voc_res_blocks,
+                        hop_length=hp.hop_length,
+                        sample_rate=hp.sample_rate,
+                        mode='MOL')
 
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+    voc_model.restore('Vocoder_WaveRNN//WaveRNN_weights//voc_weights//latest_weights.pyt')
 
-        dispatcher.utter_message("Hello World!")
-        return []
+    print('\nInitialising Tacotron_TTS Model...\n')
 
+    # Instantiate Tacotron_TTS Model
+    tts_model = Tacotron(embed_dims=hp.tts_embed_dims,
+                         num_chars=len(symbols.symbols),
+                         encoder_dims=hp.tts_encoder_dims,
+                         decoder_dims=hp.tts_decoder_dims,
+                         n_mels=hp.num_mels,
+                         fft_bins=hp.num_mels,
+                         postnet_dims=hp.tts_postnet_dims,
+                         encoder_K=hp.tts_encoder_K,
+                         lstm_dims=hp.tts_lstm_dims,
+                         postnet_K=hp.tts_postnet_K,
+                         num_highways=hp.tts_num_highways,
+                         dropout=hp.tts_dropout)
 
-class ActionAnswerQuestion(Action):
-    def name(self) -> Text:
-        return "action_answer_question"
-
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        question, gotcontext = insert_context(tracker.latest_message['text'], tracker)
-        anstype = answer_type(question)
-
-        #dispatcher.utter_message("You said: "+tracker.latest_message['text'])
-        #dispatcher.utter_message("The answer to that question is....")
-        anstext, topic = generate_answer(question)
-        dispatcher.utter_message(anstext)
-        if anstext == "Sorry, couldn't find any pages to search from!":
-            return []
-        if anstype == "NNP":
-            return [SlotSet("person_name", anstext)]
-        if anstype == "NN":
-            if len(anstext.split()) <= len(topic.split()):
-                return [SlotSet("thing_name", anstext)]
-            else:
-                return [SlotSet("thing_name", topic)]
-
-        return []
+    tts_model.restore('Vocoder_WaveRNN//WaveRNN_weights//tts_weights//latest_weights.pyt')
+    model_load_end = timer() - model_load_start
+    print('Loaded T2S model in {:.3}s.'.format(model_load_end))
 
 
 def is_whitespace(char):
@@ -307,7 +365,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
             orig_end_position = orig_ns_to_s_map[ns_end_position]
 
     if orig_end_position is None:
-        return orig_text
+        return orig_textclear
 
     output_text = orig_text[orig_start_position:(orig_end_position + 1)]
     return output_text
@@ -403,7 +461,19 @@ def predict(features, start_logit, end_logit):
     return final_text, score
 
 
+priorities = {"PERSON": 1, "EVENT": 2, "ORG": 3, "PRODUCT": 4, "LOC": 5, "GPE": 6, "NORP": 7, "LANGUAGE": 8,
+              "DATE": 9, "OTHER": 10}
 
+nlp = spacy.load("en_core_web_md")  # Much worse but faster NER with "en_core_web_sm"
+
+LOCALINFO = {"you": 'Data/About_Self',
+             "yourself": 'Data/About_Self',
+             "You": 'Data/About_Self',
+             "Yourself": 'Data/About_Self',
+             "PESU": 'Data/About_PESU',
+             "PES University": 'Data/About_PESU'}
+
+DATAKEYS = LOCALINFO.keys()
 
 
 def spacy_ner(text):
@@ -459,8 +529,7 @@ def reduced_text(wiki_page, doc, topics):
                     if root in s:
                         reduced_passage += s + "."
 
-    #return wiki_page.summary + reduced_passage
-    return wiki_page.content
+    return wiki_page.summary + reduced_passage
 
 
 def get_context(question):
@@ -469,7 +538,7 @@ def get_context(question):
             text_file = open(LOCALINFO[corpuskey], "r")
             print("Local file used :", LOCALINFO[corpuskey])
             search_passage = text_file.read()
-            return search_passage, corpuskey
+            return search_passage
 
     topic_list, doc = spacy_ner(question)
 
@@ -491,7 +560,7 @@ def get_context(question):
         except wikipedia.exceptions.DisambiguationError as err:
             wiki_page = wikipedia.page(err.options[0])
     print("Page Used :", wiki_page.title)
-    return reduced_text(wiki_page, doc, topic_list), topic_list[0]
+    return reduced_text(wiki_page, doc, topic_list)
 
 
 def get_context_via_search(question):
@@ -510,59 +579,157 @@ def get_context_via_search(question):
     return reduced_text(wiki_page, doc, topic_list)
 
 
+directory_in_str = "test_audio/"
+directory = os.fsencode(directory_in_str)
+
+
 def generate_answer(question):
     try:
-        context, topic = get_context(question)
+        context = get_context(question)
         # print(context)
-        return bert_predict(context, question), topic
+        return bert_predict(context, question)
     except IndexError:
-        return "Sorry, couldn't find any pages to search from!", "N/A"
+        return "Sorry, couldn't find any pages to search from!"
 
-def answer_type(question):
-    question = question.lower().split()
-    questionwords = {"who": "NNP", "what": "NN", "when": "DATE", "how": "method", "why": "reason"}
-    for qw in questionwords.keys():
-        if qw in question:
-            return questionwords[qw]
 
-def splitquestion(question):
-    question = question.lower()
-    questionwords = ["who", "what", "when", "how", "why"]
-    words = question.split()
-    qw_count = 0
-    for w in words:
-        if w in questionwords:
-            qw_count +=1
-    if qw_count <= 1:
-        return [question] , qw_count
+def test_aud_in():
+    tstart = timer()
+    audio = "py_rec.wav"
+    fs = 44100
+    duration = 5  # seconds
+    myrecording = sd.rec(duration * fs, samplerate=fs, channels=2, dtype='float32')
+    print("Recording Audio")
+    sd.wait()
+    print("Audio recording complete , Play Audio")
+    sd.play(myrecording, fs)
+    sd.wait()
+    print("Play Audio Complete")
+    sf.write(audio, myrecording, fs)
 
-def insert_context(question, tracker):
-        # question = original_question.lower()
-        current_slots = tracker.current_slot_values()
-        pronouns = [r"he", r"she", r"they", r"it", r"him", r"her", r"they", r"them", r"his"]
-        for pn in pronouns:
-            if re.search(r'\b'+pn + r'\b',question):
-                if pn in ["he","she","him","her","they","them"]:
-                    if current_slots['person_name'] != "None":
-                        question = re.sub(r"\b"+pn +r"\b" , current_slots['person_name'], question,1)
-                        print("Had oontext. Question is now:",question)
-                    else:
-                        print("Don't have context")
-                        return question, 0
-                if pn in ["his"]:
-                    if current_slots['person_name'] != "None":
-                        question = re.sub(r"\b"+pn +r"\b" , current_slots['person_name'] + "'s", question,1)
-                        print("Had oontext. Question is now:",question)
-                    else:
-                        print("Don't have context")
-                        return question, 0
+    fin = wave.open(audio, 'rb')
+    fs = fin.getframerate()
+    if fs != 16000:
+        warn = 'Resampling from {}Hz to 16kHz'
+        print(warn.format(fs), file=sys.stderr)
+        fs, audio = change_samplerate(fin, fs)
+        audio_length = fin.getnframes() * (1 / 16000)
+        fin.close()
+    else:
+        audio = np.frombuffer(fin.readframes(fin.getnframes()), np.int16)
+        audio_length = fin.getnframes() * (1 / 16000)
+        fin.close()
 
-                if pn in ["it"]:
-                    if current_slots['thing_name'] != "None":
-                        question = re.sub(r"\b"+pn +r"\b" , current_slots['thing_name'], question,1)
-                        print("Had oontext. Question is now:",question)
-                    else:
-                        print("Don't have context")
-                        return question, 0
-        return question,1
+    print('Running inference.', file=sys.stderr)
+    inference_start = timer()
+    qasked = ds.stt(audio, fs)
+    inference_end = timer() - inference_start
+    print('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, audio_length), file=sys.stderr)
+    print("Infered:", qasked)
+    qasked = spell_check.parse(qasked)['result']
+    print("Question:", qasked)
+    print("Generating answer!")
+    gen_start = timer()
+    ans = generate_answer(qasked)
+    print("Answer:", ans)
+    print("Answer generated in {:.3}s.".format(timer() - gen_start))
+    print("Generating audio out")
+    if tts_choice == 0:
+        aud_timer = timer()
+        aud_out = synthesizer.synthesize(ans)
+        print('Took {:.3}s for audio synthesis.'.format(timer() - aud_timer))
+        tot_time = timer() - tstart
+        aud_out = np.frombuffer(aud_out, dtype='int32')
+        sd.play(aud_out, 10500)
+        sd.wait()
+        print("Time for sample: {:.3}s.".format(tot_time))
+        save_path = f'Tacotron_TTS/Tacotron_outputs/__input_{ans[:10]}.wav'
+        sf.write(save_path,aud_out, 10500)
+    else:
+        input_sequence = text_to_sequence(ans.strip(), hp.tts_cleaner_names)
+        aud_timer = timer()
+        _, m, attention = tts_model.generate(input_sequence)
+        save_path = f'Vocoder_WaveRNN/WaveRNN_outputs/__input_{ans[:10]}.wav'
+        m = torch.tensor(m).unsqueeze(0)
+        m = (m + 4) / 8
+        batched = 1
+        op = voc_model.generate(m, save_path, batched, hp.voc_target, hp.voc_overlap, hp.mu_law)
+        print('Took {:.3}s for audio synthesis.'.format(timer() - aud_timer))
+        sample_time = timer() - aud_timer
+        sd.play(op, 22050)
+        sd.wait()
+        print("Time for sample: {:.3}s.".format(sample_time))
+
+
+def test_files():
+    count = 0
+    time_for_all_files = 0
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        if filename.endswith(".wav"):
+            start_time = timer()
+            fn2 = directory_in_str + filename
+            #playsound(fn2)
+            fin = wave.open(fn2, 'rb')
+            fs = fin.getframerate()
+            if fs != 16000:
+                print('Resampling from ({}) to 16kHz.'.format(fs), file=sys.stderr)
+                fs, audio = change_samplerate(fin, fs)
+                audio_length = fin.getnframes() * (1 / 16000)
+                fin.close()
+            else:
+                audio = np.frombuffer(fin.readframes(fin.getnframes()), np.int16)
+                audio_length = fin.getnframes() * (1 / 16000)
+                fin.close()
+
+            print('Running inference.', file=sys.stderr)
+            inference_start = timer()
+            qasked = ds.stt(audio, fs)
+            inference_end = timer() - inference_start
+            print('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, audio_length), file=sys.stderr)
+            print("Inferred:", qasked)
+            qasked = spell_check.parse(qasked)['result']
+            print("Question:", qasked)
+            gen_start = timer()
+            ans = generate_answer(qasked)
+            print("Answer:", ans)
+            print("Answer generated in {:.3}s.".format(timer() - gen_start))
+            print("Generating audio out")
+            if tts_choice == 0:
+                aud_timer = timer()
+                aud_out = synthesizer.synthesize(ans)
+                print('Took {:.3}s for audio synthesis.'.format(timer() - aud_timer))
+                sample_time = timer() - start_time
+                aud_out = np.frombuffer(aud_out, dtype='int32')
+                sd.play(aud_out, 10500)
+                sd.wait()
+                save_path = f'Tacotron_TTS/Tacotron_outputs/__input_{ans[:10]}.wav'
+                sf.write(save_path, aud_out, 10500)
+
+            else:
+                input_sequence = text_to_sequence(ans.strip(), hp.tts_cleaner_names)
+                aud_timer = timer()
+                _, m, attention = tts_model.generate(input_sequence)
+                save_path = f'Vocoder_WaveRNN/WaveRNN_outputs/__input_{ans[:10]}.wav'
+                m = torch.tensor(m).unsqueeze(0)
+                m = (m + 4) / 8
+                batched = 1
+                op = voc_model.generate(m, save_path, batched, hp.voc_target, hp.voc_overlap, hp.mu_law)
+                print('Took {:.3}s for audio synthesis.'.format(timer() - aud_timer))
+                sample_time = timer() - start_time
+                sd.play(op, 22050)
+                sd.wait()
+            print("Time for sample: {:.3}s.\n".format(sample_time))
+            time_for_all_files += sample_time
+            count += 1
+            print("******")
+    print("Time for all samples :", time_for_all_files, "s")
+    print("Average time: {:.3}s".format(time_for_all_files / count))
+
+
+print()
+print("############################")
+print("Testing all files in testing folder")
+print("########################")
+print()
+test_files()
 
