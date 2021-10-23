@@ -27,8 +27,9 @@ This is an end-to-end voicebot that aims to answer open domain questions, and is
  
 We recommend using a virtual environment to run this to prevent any conflicts with things like numpy.
 
-You can install any of the Spacy NER models you prefer (We have used 'en_core_web_md') by: (We have to run it with Administaion permissions)
+You can install any of the Spacy NER models you prefer (We used 'en_core_web_md') by: 
  - python -m spacy download en_core_web_md
+(Note: Run this in an elevated command prompt with Admin permissions)
 
 You will also require the following models 
 
@@ -51,14 +52,13 @@ Once the TTS has been loaded you will be prompted to select the running mode. Th
 To add your own audio to the testing set, simply place the wav file in the test-audio folder. For best results, use an American male voice, with a normal or slow speed setting from a site like [this](http://www.fromtexttospeech.com/). 
 
 ## Running on Windows 10
-Run VoiceBot-windows.py
-Initially designed for the Windows platform. As such, all features should work perfectly.
+Run the VoiceBot-windows.py file.
 Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
 
 ## Running on Ubuntu
-Rin the VoiceBot-linux.py file
-playsound library and sounddevice library is not compatible.
-So, audio cannot be recorded or played on or from the console.
+Run the VoiceBot-linux.py file.
+
+Note : The playsound library and sounddevice library are not compatible with Ubuntu, so audio cannot be recorded from or played on the console.
 VoiceBot can work only from questions pre-recorded in 'test_audio' folder.
 Outputs can be accessed from '/Vocoder_WaveRNN/WaveRNN_outputs' OR '/Tacotron_TTS/Tacotron_outputs' subfolders
 
